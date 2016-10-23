@@ -156,7 +156,7 @@ class ImageLoader
         $imageContent = $this->_getImageContent($imagePath);
         $localImagePath = $this->_getNewImagePath($imagePath);
 
-        file_put_contents($localImagePath, $imageContent);
+        @file_put_contents($localImagePath, $imageContent);
 
         return $localImagePath;
     }
