@@ -15,6 +15,8 @@ class ImageLoader
     private $_destination;
     private $_supportedFormats = ['gif', 'jpg', 'png'];
 
+    public $l10n;
+
     /**
      * Constructor.
      * 
@@ -23,6 +25,75 @@ class ImageLoader
     public function __construct($dirPath)
     {
         $this->_destination = $dirPath;
+        $this->l10n = new Localization(__DIR__ . '/../languages');
+    }
+
+    /**
+     * This method check accessibility of destination directory.
+     * 
+     * @return string Current path to destination directory.
+     * @throws \Exception
+     */
+    private function _checkDestinationDirectory()
+    {
+        $dirPath = $this->getDestination();
+
+        if ((!is_dir($dirPath) && !(@mkdir($dirPath))) || !is_writable($dirPath)) {
+            throw new \Exception(
+                $this->l10n->msg('DestinationDirectoryIsNotAccessible', $dirPath)
+            );
+        }
+
+        return $dirPath;
+    }
+
+    /**
+     * This method tries to get image content from given path.
+     * 
+     * @param string $imagePath Remote image path.
+     * 
+     * @return data Image raw data.
+     */
+    private function _getImageContent($imagePath)
+    {
+        $imageExt = pathinfo($imagePath, PATHINFO_EXTENSION);
+
+        if (!$this->isSupportedFormat($imageExt)) {
+            throw new \Exception(
+                $this->l10n->msg('FormatIsNotSupported', [$imageExt, implode(', ', $this->_supportedFormats)])
+            );
+        }
+
+        if (!$remoteImageContent = @file_get_contents($imagePath)) {
+            throw new \Exception(
+                $this->l10n->msg('FailedToLoadImageFromPath', $imagePath)
+            );
+        }
+
+        return $remoteImageContent;
+    }
+
+    /**
+     * This method check possibility of using remote file name in that directory.
+     * 
+     * @param string $imagePath Remote image path.
+     * 
+     * @return string Local path for new image file.
+     * @throws \Exception
+     */
+    private function _getNewImagePath($imagePath)
+    {
+        $dirPath = $this->_checkDestinationDirectory();
+        $imageName = pathinfo($imagePath, PATHINFO_BASENAME);
+        $localImagePath = $dirPath . DIRECTORY_SEPARATOR . $imageName;
+
+        if (file_exists($localImagePath)) {
+            throw new \Exception(
+                $this->l10n->msg('FileWithTheSameNameAlreadyExist', [$imageName, $dirPath])
+            );
+        }
+
+        return $localImagePath;
     }
 
     /**
@@ -42,24 +113,6 @@ class ImageLoader
     }
 
     /**
-     * This method check accessibility of destination directory.
-     * 
-     * @return string Current path to destination directory.
-     * @throws \Exception
-     */
-    private function _checkDestinationDirectory()
-    {
-        $dirPath = $this->getDestination();
-
-        if ((!is_dir($dirPath) && !(@mkdir($dirPath))) || !is_writable($dirPath)) {
-            $msg = "Destination directory '$dirPath' is not accessible.";
-            throw new \Exception($msg);
-        }
-
-        return $dirPath;
-    }
-
-    /**
      * This method return current destination path.
      * 
      * @return string Current destination directory path.
@@ -67,55 +120,6 @@ class ImageLoader
     public function getDestination()
     {
         return $this->_destination;
-    }
-    
-    /**
-     * This method tries to get image content from given path.
-     * 
-     * @param string $imagePath Remote image path.
-     * 
-     * @return data Image raw data.
-     */
-    private function _getImageContent($imagePath)
-    {
-        $imageExt = pathinfo($imagePath, PATHINFO_EXTENSION);
-
-        if (!$this->isSupportedFormat($imageExt)) {
-            $msg = "File with extension '$imageExt' is not supported.";
-            $msg .= " Supported formats are: ";
-            $msg .= implode(', ', $this->_supportedFormats) . ".";
-            throw new \Exception($msg);
-        }
-
-        if (!$remoteImageContent = @file_get_contents($imagePath)) {
-            $msg = "Failed load image from path '$imagePath'.";
-            throw new \Exception($msg);
-        }
-
-        return $remoteImageContent;
-    }
-    
-     /**
-     * This method check possibility of using remote file name in that directory.
-     * 
-     * @param string $imagePath Remote image path.
-     * 
-     * @return string Local path for new image file.
-     * @throws \Exception
-     */
-    private function _getNewImagePath($imagePath)
-    {
-        $dirPath = $this->_checkDestinationDirectory();
-        $imageName = pathinfo($imagePath, PATHINFO_BASENAME);
-        $localImagePath = $dirPath . DIRECTORY_SEPARATOR . $imageName;
-
-        if (file_exists($localImagePath)) {
-            $msg = "File with the same name '$imageName' already exists";
-            $msg .= " in destination directory '$dirPath'.";
-            throw new \Exception($msg);
-        }
-
-        return $localImagePath;
     }
 
     /**
