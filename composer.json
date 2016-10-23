@@ -1,7 +1,7 @@
 {
 	"name": "vchenin/test-package",
 	"description": "Test package including: Remote images loader (supported formats: jpg, png, gif).",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"autoload": {
 		"psr-4": {"TestPackage\\": "src/"}
 	}
